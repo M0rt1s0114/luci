@@ -10,6 +10,8 @@ This repository is for imm-mt798x-21.02. The original branch referenced in the s
 
 Due to my health, I cannot keep this repository up to date all the time, please forgive me.
 
+Thank you to everyone who has worked on this project.
+
 ## Usage
 
 This feed is enabled by default. Your feeds.conf.default (or feeds.conf) should contain a line like:
