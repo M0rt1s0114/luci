@@ -78,7 +78,6 @@ yml_dns_custom()
 {
    if [ "$1" = 1 ] || [ "$3" = 1 ]; then
       sys_dns_append "$3" "$4"
-      config_load "openclash"
       config_foreach yml_dns_get "dns_servers" "$2"
    fi
 }
@@ -278,6 +277,7 @@ yml_dns_get()
    esac
 }
 
+config_load "openclash"
 config_foreach yml_auth_get "authentication"
 yml_dns_custom "$enable_custom_dns" "$5" "$append_wan_dns" "${16}"
 
@@ -349,6 +349,7 @@ lgbm_custom_url = '${43}'
 lgbm_update_interval = '${44}'
 smart_collect = '${45}' == '1'
 smart_collect_size = '${46}'
+fake_ip_range6 = '${47}'
 
 enable_custom_dns = '$enable_custom_dns' == '1'
 append_wan_dns = '$append_wan_dns' == '1'
@@ -399,7 +400,7 @@ threads << Thread.new do
 
       Value['lgbm-auto-update'] = true if lgbm_auto_update
       if lgbm_auto_update
-         Value['lgbm-custom-url'] = lgbm_custom_url.strip
+         Value['lgbm-url'] = lgbm_custom_url.strip
          Value['lgbm-update-interval'] = lgbm_update_interval.to_i
       end
 
@@ -431,6 +432,9 @@ threads << Thread.new do
       else
          Value['dns']['enhanced-mode'] = 'fake-ip'
          Value['dns']['fake-ip-range'] = fake_ip_range
+         if Value['dns']['ipv6']
+            Value['dns']['fake-ip-range6'] = fake_ip_range6
+         end
       end
       Value['dns']['listen'] = '0.0.0.0:' + dns_listen_port
       Value['dns']['respect-rules'] = true if respect_rules
@@ -624,7 +628,7 @@ end
 threads << Thread.new do
    begin
       if (auth_config = safe_load_yaml('/tmp/yaml_openclash_auth'))
-         (Value['authentication'] ||= []).concat(auth_config).uniq!
+         Value['authentication'] = auth_config
       end
    rescue Exception => e
       YAML.LOG('Error: Set authentication Failed,【%s】' % [e.message])
@@ -678,6 +682,11 @@ begin
       YAML.LOG('Tip: Detected That The nameserver DNS Option Has No Server Set, Starting To Complete...')
       Value['dns']['nameserver'] = ['114.114.114.114', '119.29.29.29', '8.8.8.8', '1.1.1.1']
       Value['dns']['fallback'] ||= ['https://dns.cloudflare.com/dns-query', 'https://dns.google/dns-query']
+   end
+
+   if Value['dns'].key?('default-nameserver') && Value['dns']['default-nameserver'].to_a.empty?
+      YAML.LOG('Tip: Detected That The default-nameserver DNS Option Has No Server Set, Starting To Complete...')
+      Value['dns']['default-nameserver'] = ['114.114.114.114', '119.29.29.29', '8.8.8.8', '1.1.1.1']
    end
 
    # proxy-server-nameserver
